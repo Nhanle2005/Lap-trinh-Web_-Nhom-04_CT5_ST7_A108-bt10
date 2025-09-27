@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Danh mục - Product Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Category System</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Trang chủ</a>
+                <a class="nav-link" href="/products">Sản phẩm</a>
+                <a class="nav-link active" href="/categories">Danh mục</a>
+                <a class="nav-link" href="/users">Người dùng</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Quản lý Danh mục</h2>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                Thêm danh mục
+            </button>
+        </div>
+
+        <div id="loading" class="text-center d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+        </div>
+
+        <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+        <div id="success-message" class="alert alert-success d-none" role="alert"></div>
+
+        <div id="categories-container" class="row g-4">
+            <!-- Categories will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div class="modal fade" id="addCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thêm danh mục mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-category-form">
+                        <div class="mb-3">
+                            <label class="form-label">Tên danh mục *</label>
+                            <input type="text" class="form-control" id="add-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hình ảnh</label>
+                            <input type="text" class="form-control" id="add-images" placeholder="URL hình ảnh hoặc tên file">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-success" onclick="addCategory()">Thêm danh mục</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const GET_ALL_CATEGORIES_QUERY = `
+            query {
+                getAllCategories {
+                    id
+                    name
+                    images
+                }
+            }
+        `;
+
+        const ADD_CATEGORY_MUTATION = `
+            mutation($input: CategoryInput!) {
+                createCategory(input: $input) {
+                    id
+                    name
+                    images
+                }
+            }
+        `;
+
+        const DELETE_CATEGORY_MUTATION = `
+            mutation($id: ID!) {
+                deleteCategory(id: $id)
+            }
+        `;
+
+        function showMessage(message, type = 'success') {
+            const messageDiv = document.getElementById(type + '-message');
+            messageDiv.textContent = message;
+            messageDiv.classList.remove('d-none');
+            setTimeout(() => {
+                messageDiv.classList.add('d-none');
+            }, 3000);
+        }
+
+        function renderCategories(categories) {
+            const container = document.getElementById('categories-container');
+            
+            if (categories.length === 0) {
+                container.innerHTML = '<div class="col-12"><div class="alert alert-info">Không có danh mục nào.</div></div>';
+                return;
+            }
+
+            container.innerHTML = categories.map(category => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title">${category.name}</h5>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${category.id})">
+                                    🗑️
+                                </button>
+                            </div>
+                            <p class="card-text">
+                                <small class="text-muted">ID: ${category.id}</small><br>
+                                ${category.images ? `<small>Hình ảnh: ${category.images}</small>` : '<small class="text-muted">Không có hình ảnh</small>'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadAllCategories() {
+            document.getElementById('loading').classList.remove('d-none');
+            
+            fetch('/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: GET_ALL_CATEGORIES_QUERY
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('d-none');
+                if (data.errors) {
+                    showMessage('Lỗi GraphQL: ' + data.errors.map(e => e.message).join(', '), 'error');
+                    return;
+                }
+                renderCategories(data.data.getAllCategories);
+            })
+            .catch(error => {
+                document.getElementById('loading').classList.add('d-none');
+                showMessage('Lỗi kết nối: ' + error.message, 'error');
+            });
+        }
+
+        function addCategory() {
+            const name = document.getElementById('add-name').value;
+            const images = document.getElementById('add-images').value;
+
+            if (!name) {
+                showMessage('Vui lòng nhập tên danh mục!', 'error');
+                return;
+            }
+
+            fetch('/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: ADD_CATEGORY_MUTATION,
+                    variables: {
+                        input: {
+                            name: name,
+                            images: images
+                        }
+                    }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.errors) {
+                    showMessage('Lỗi GraphQL: ' + data.errors.map(e => e.message).join(', '), 'error');
+                    return;
+                }
+                showMessage('Thêm danh mục thành công!');
+                document.getElementById('add-category-form').reset();
+                bootstrap.Modal.getInstance(document.getElementById('addCategoryModal')).hide();
+                loadAllCategories();
+            })
+            .catch(error => {
+                showMessage('Lỗi kết nối: ' + error.message, 'error');
+            });
+        }
+
+        function deleteCategory(categoryId) {
+            if (!confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
+                return;
+            }
+
+            fetch('/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: DELETE_CATEGORY_MUTATION,
+                    variables: { id: categoryId.toString() }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.errors) {
+                    showMessage('Lỗi GraphQL: ' + data.errors.map(e => e.message).join(', '), 'error');
+                    return;
+                }
+                if (data.data.deleteCategory) {
+                    showMessage('Xóa danh mục thành công!');
+                    loadAllCategories();
+                } else {
+                    showMessage('Không thể xóa danh mục!', 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Lỗi kết nối: ' + error.message, 'error');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllCategories();
+        });
+    </script>
+</body>
+</html>

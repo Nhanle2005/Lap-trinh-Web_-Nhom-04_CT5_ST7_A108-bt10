@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sản phẩm theo danh mục - Product Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Product System</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Trang chủ</a>
+                <a class="nav-link" href="/products">Sản phẩm</a>
+                <a class="nav-link" href="/categories">Danh mục</a>
+                <a class="nav-link" href="/users">Người sở hữu</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <h2 class="mb-4">Sản phẩm theo danh mục</h2>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Chọn danh mục</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="categories-loading" class="text-center">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                        </div>
+                        <div id="categories-list" class="d-none">
+                            <!-- Categories will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div id="selected-category" class="d-none">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 id="category-title">Sản phẩm trong danh mục</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="products-loading" class="text-center d-none">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Đang tải...</span>
+                                </div>
+                            </div>
+                            <div id="products-list">
+                                <!-- Products will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="no-category-selected" class="alert alert-info">
+                    Hãy chọn một danh mục để xem sản phẩm
+                </div>
+            </div>
+        </div>
+
+        <div id="error-message" class="alert alert-danger d-none mt-3" role="alert"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // GraphQL queries
+        const GET_ALL_CATEGORIES_QUERY = `
+            query {
+                getAllCategories {
+                    id
+                    name
+                    images
+                }
+            }
+        `;
+
+        const GET_PRODUCTS_BY_CATEGORY_QUERY = `
+            query($categoryId: ID!) {
+                getProductsByCategory(categoryId: $categoryId) {
+                    id
+                    title
+                    quantity
+                    desc
+                    price
+                    user {
+                        id
+                        fullname
+                    }
+                }
+            }
+        `;
+
+        let selectedCategoryId = null;
+
+        function formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN', { 
+                style: 'currency', 
+                currency: 'VND' 
+            }).format(price);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+        }
+
+        function hideError() {
+            document.getElementById('error-message').classList.add('d-none');
+        }
+
+        function renderCategories(categories) {
+            const container = document.getElementById('categories-list');
+            const loadingDiv = document.getElementById('categories-loading');
+            
+            loadingDiv.classList.add('d-none');
+            container.classList.remove('d-none');
+
+            if (categories.length === 0) {
+                container.innerHTML = '<div class="alert alert-warning">Không có danh mục nào.</div>';
+                return;
+            }
+
+            container.innerHTML = categories.map(category => `
+                <button class="btn btn-outline-primary w-100 mb-2" 
+                        onclick="selectCategory(${category.id}, '${category.name}')">
+                    ${category.name}
+                </button>
+            `).join('');
+        }
+
+        function selectCategory(categoryId, categoryName) {
+            selectedCategoryId = categoryId;
+            
+            // Update UI
+            document.getElementById('no-category-selected').classList.add('d-none');
+            document.getElementById('selected-category').classList.remove('d-none');
+            document.getElementById('category-title').textContent = `Sản phẩm trong danh mục: ${categoryName}`;
+            
+            // Highlight selected category
+            document.querySelectorAll('#categories-list .btn').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+            });
+            event.target.classList.remove('btn-outline-primary');
+            event.target.classList.add('btn-primary');
+            
+            loadProductsByCategory(categoryId);
+        }
+
+        function loadProductsByCategory(categoryId) {
+            const productsLoading = document.getElementById('products-loading');
+            const productsList = document.getElementById('products-list');
+            
+            productsLoading.classList.remove('d-none');
+            productsList.innerHTML = '';
+            hideError();
+
+            fetch('/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: GET_PRODUCTS_BY_CATEGORY_QUERY,
+                    variables: { categoryId: categoryId.toString() }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                productsLoading.classList.add('d-none');
+                if (data.errors) {
+                    showError('Lỗi GraphQL: ' + data.errors.map(e => e.message).join(', '));
+                    return;
+                }
+                renderProducts(data.data.getProductsByCategory);
+            })
+            .catch(error => {
+                productsLoading.classList.add('d-none');
+                showError('Lỗi kết nối: ' + error.message);
+                console.error('Error:', error);
+            });
+        }
+
+        function renderProducts(products) {
+            const container = document.getElementById('products-list');
+            
+            if (products.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">Không có sản phẩm nào trong danh mục này.</div>';
+                return;
+            }
+
+            container.innerHTML = products.map(product => `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="card-title">${product.title}</h6>
+                                <p class="card-text small">${product.desc || 'Không có mô tả'}</p>
+                                <span class="badge bg-secondary">SL: ${product.quantity}</span>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="h6 text-success">${formatPrice(product.price)}</div>
+                                <small class="text-muted">Bởi: ${product.user.fullname}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadCategories() {
+            fetch('/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: GET_ALL_CATEGORIES_QUERY
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.errors) {
+                    showError('Lỗi GraphQL: ' + data.errors.map(e => e.message).join(', '));
+                    return;
+                }
+                renderCategories(data.data.getAllCategories);
+            })
+            .catch(error => {
+                showError('Lỗi kết nối: ' + error.message);
+                console.error('Error:', error);
+            });
+        }
+
+        // Load categories when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCategories();
+        });
+    </script>
+</body>
+</html>
