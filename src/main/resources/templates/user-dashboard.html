@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Product Management System</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .main-content {
+            padding: 30px 0;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .welcome-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .feature-card {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .feature-card:hover {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .feature-card .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+        }
+        
+        .stats-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-home me-2"></i>Product Management System
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle fa-lg me-2"></i>
+                        <span th:text="${user.fullname}">User</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/"><i class="fas fa-home me-2"></i>Trang chủ</a></li>
+                        <li><a class="dropdown-item" href="/products"><i class="fas fa-box me-2"></i>Sản phẩm</a></li>
+                        <li><a class="dropdown-item" href="/graphiql"><i class="fas fa-code me-2"></i>GraphQL API</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container main-content">
+        <!-- Welcome Message -->
+        <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${message}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Welcome Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card welcome-card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-user-circle fa-4x mb-3"></i>
+                        <h1 class="card-title mb-3" th:text="'Xin chào, ' + ${user.fullname} + '!'">Xin chào, User!</h1>
+                        <p class="card-text lead mb-4">Chào mừng bạn đến với hệ thống quản lý sản phẩm</p>
+                        <div class="row justify-content-center">
+                            <div class="col-auto">
+                                <span class="stats-badge me-3">
+                                    <i class="fas fa-envelope me-2"></i><span th:text="${user.email}">user@example.com</span>
+                                </span>
+                            </div>
+                            <div class="col-auto">
+                                <span class="stats-badge">
+                                    <i class="fas fa-user-tag me-2"></i>Người dùng
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="text-white mb-3">
+                    <i class="fas fa-rocket me-2"></i>Khám phá các tính năng
+                </h3>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- View Products -->
+            <div class="col-md-6 col-lg-3">
+                <a href="/user/products" class="feature-card card text-decoration-none">
+                    <div class="card-body text-center">
+                        <i class="fas fa-box icon"></i>
+                        <h5 class="card-title">Xem Sản phẩm</h5>
+                        <p class="card-text text-muted">Khám phá tất cả sản phẩm có sẵn</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- View Categories -->
+            <div class="col-md-6 col-lg-3">
+                <a href="/user/categories" class="feature-card card text-decoration-none">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tags icon"></i>
+                        <h5 class="card-title">Danh mục</h5>
+                        <p class="card-text text-muted">Duyệt theo danh mục sản phẩm</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- GraphQL API -->
+            <div class="col-md-6 col-lg-3">
+                <a href="/graphiql" class="feature-card card text-decoration-none">
+                    <div class="card-body text-center">
+                        <i class="fas fa-code icon"></i>
+                        <h5 class="card-title">GraphQL API</h5>
+                        <p class="card-text text-muted">Truy cập API GraphQL (chỉ query)</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- View Users -->
+            <div class="col-md-6 col-lg-3">
+                <a href="/user/users" class="feature-card card text-decoration-none">
+                    <div class="card-body text-center">
+                        <i class="fas fa-users icon"></i>
+                        <h5 class="card-title">Người dùng</h5>
+                        <p class="card-text text-muted">Xem danh sách người dùng</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="text-white mb-3">
+                    <i class="fas fa-chart-bar me-2"></i>Thống kê
+                </h3>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-box fa-2x text-primary mb-3"></i>
+                        <h3 class="card-title" id="totalProducts">-</h3>
+                        <p class="card-text text-muted">Tổng Sản phẩm</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-tags fa-2x text-success mb-3"></i>
+                        <h3 class="card-title" id="totalCategories">-</h3>
+                        <p class="card-text text-muted">Danh mục</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-users fa-2x text-info mb-3"></i>
+                        <h3 class="card-title" id="totalUsers">-</h3>
+                        <p class="card-text text-muted">Người dùng</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-dollar-sign fa-2x text-warning mb-3"></i>
+                        <h3 class="card-title" id="totalValue">-</h3>
+                        <p class="card-text text-muted">Tổng Giá trị</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Products -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="text-white mb-3">
+                    <i class="fas fa-star me-2"></i>Sản phẩm nổi bật
+                </h3>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-fire me-2 text-danger"></i>Sản phẩm mới nhất
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="recentProductsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Tên Sản phẩm</th>
+                                        <th>Danh mục</th>
+                                        <th>Giá</th>
+                                        <th>Số lượng</th>
+                                        <th>Người tạo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="/user/products" class="btn btn-primary">
+                                <i class="fas fa-eye me-2"></i>Xem tất cả sản phẩm
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Load dashboard data
+        function loadDashboardData() {
+            // Load statistics
+            const queries = [
+                fetchGraphQL('query { getAllCategories { id } }'),
+                fetchGraphQL('query { getAllUsers { id } }'),
+                fetchGraphQL('query { getAllProductsByPriceAsc { id title price category { name } user { fullname } } }')
+            ];
+
+            Promise.all(queries).then(results => {
+                const [categories, users, products] = results;
+                
+                // Update statistics
+                document.getElementById('totalCategories').textContent = categories.data.getAllCategories.length;
+                document.getElementById('totalUsers').textContent = users.data.getAllUsers.length;
+                document.getElementById('totalProducts').textContent = products.data.getAllProductsByPriceAsc.length;
+                
+                // Calculate total value
+                const totalValue = products.data.getAllProductsByPriceAsc.reduce((sum, product) => {
+                    return sum + parseFloat(product.price || 0);
+                }, 0);
+                document.getElementById('totalValue').textContent = formatCurrency(totalValue);
+                
+                // Load recent products
+                loadRecentProducts(products.data.getAllProductsByPriceAsc);
+            }).catch(error => {
+                console.error('Error loading dashboard data:', error);
+                // Set default values on error
+                ['totalCategories', 'totalUsers', 'totalProducts', 'totalValue'].forEach(id => {
+                    document.getElementById(id).textContent = '0';
+                });
+            });
+        }
+
+        // Load recent products
+        function loadRecentProducts(products) {
+            const recentProducts = products.slice(-10).reverse(); // Get last 10 products
+            const tbody = document.querySelector('#recentProductsTable tbody');
+            
+            if (recentProducts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Chưa có sản phẩm nào</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = recentProducts.map(product => `
+                <tr class="product-row">
+                    <td>
+                        <strong>${product.title}</strong>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">${product.category.name}</span>
+                    </td>
+                    <td class="text-success fw-bold">${formatCurrency(product.price)}</td>
+                    <td>
+                        <span class="badge bg-info">${product.quantity || 0}</span>
+                    </td>
+                    <td>
+                        <i class="fas fa-user me-1"></i>${product.user.fullname}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Helper Functions
+        function fetchGraphQL(query) {
+            return fetch('/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query })
+            }).then(response => response.json());
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            
+            // Auto-hide alerts after 5 seconds
+            setTimeout(() => {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

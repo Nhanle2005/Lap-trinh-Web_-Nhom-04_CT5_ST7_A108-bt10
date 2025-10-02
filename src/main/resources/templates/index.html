@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Management System - GraphQL Demo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .navbar-brand {
             font-weight: bold;
@@ -25,31 +26,122 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="/">Hệ thống quản lý sản phẩm</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/">Trang chủ</a>
-                <a class="nav-link" href="/products">Sản phẩm</a>
-                <a class="nav-link" href="/categories">Danh mục</a>
-                <a class="nav-link" href="/users">Người dùng</a>
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-boxes me-2"></i>Product Management
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="${isLoggedIn and isAdmin} ? '/admin/products' : '/user/products'">Sản phẩm</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="${isLoggedIn and isAdmin} ? '/admin/categories' : '/user/categories'">Danh mục</a>
+                    </li>
+                    <li class="nav-item" th:if="${isLoggedIn}">
+                        <a class="nav-link" th:href="${isAdmin} ? '/admin/users' : '/user/users'">Người dùng</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/graphiql">GraphQL API</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item" th:if="${!isLoggedIn}">
+                        <a class="nav-link btn btn-outline-light" href="/login">
+                            <i class="fas fa-sign-in-alt me-1"></i>Đăng nhập
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown" th:if="${isLoggedIn}">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            <span th:text="${currentUser?.fullname} ?: 'User'">User</span>
+                            <span class="badge bg-light text-dark ms-1" th:text="${isAdmin} ? 'ADMIN' : 'USER'">USER</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="${isAdmin} ? '/admin/dashboard' : '/user/dashboard'">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout">
+                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
 
+    <!-- Hero Section -->
     <div class="hero-section text-center">
         <div class="container">
-            <h1 class="display-4 mb-4">Hệ thống quản lý sản phẩm</h1>
-            <p class="lead mb-4">Khám phá các chức năng</p>
+            <h1 class="display-4 mb-4">Product Management System</h1>
+            
+            <!-- Welcome message based on login status -->
+            <p class="lead mb-4" th:text="${isLoggedIn} ? 
+                (${isAdmin} ? 'Chào mừng Admin! Quản lý toàn bộ hệ thống.' : 'Chào mừng User! Khám phá sản phẩm.') : 
+                'Hệ thống quản lý sản phẩm với GraphQL API và Spring Boot 3'">
+                Hệ thống quản lý sản phẩm với GraphQL API và Spring Boot 3
+            </p>
+            
+            <!-- Logged in users -->
+            <div th:if="${isLoggedIn}" class="row justify-content-center mb-4">
+                <div class="col-auto me-3">
+                    <a th:href="${isAdmin} ? '/admin/dashboard' : '/user/dashboard'" class="btn btn-warning btn-lg">
+                        <i class="fas fa-tachometer-alt me-2"></i>My Dashboard
+                    </a>
+                </div>
+                <div class="col-auto me-3">
+                    <a th:href="${isAdmin} ? '/admin/products' : '/user/products'" class="btn btn-success btn-lg">
+                        <i class="fas fa-box me-2"></i>
+                        <span th:text="${isAdmin} ? 'Quản lý Sản phẩm' : 'Xem Sản phẩm'">Sản phẩm</span>
+                    </a>
+                </div>
+                <div class="col-auto">
+                    <a href="/graphiql" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-code me-2"></i>GraphQL API
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Not logged in users -->
+            <div th:unless="${isLoggedIn}" class="row justify-content-center mb-4">
+                <div class="col-auto me-3">
+                    <a href="/login" class="btn btn-warning btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                    </a>
+                </div>
+                <div class="col-auto me-3">
+                    <a href="/user/products" class="btn btn-success btn-lg">
+                        <i class="fas fa-box me-2"></i>Xem Sản phẩm
+                    </a>
+                </div>
+                <div class="col-auto">
+                    <a href="/graphiql" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-code me-2"></i>GraphQL API
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Quick access buttons -->
             <div class="row justify-content-center">
                 <div class="col-md-8">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <a href="/products-by-price" class="btn btn-light btn-lg w-100">
-                                Sản phẩm theo giá
+                            <a th:href="${isLoggedIn and isAdmin} ? '/admin/products?sort=price' : '/user/products-by-price'" 
+                               class="btn btn-light btn-lg w-100">
+                                <i class="fas fa-sort-amount-up me-2"></i>Sản phẩm theo giá
                             </a>
                         </div>
                         <div class="col-md-6">
-                            <a href="/products-by-category" class="btn btn-outline-light btn-lg w-100">
-                                Sản phẩm theo danh mục
+                            <a th:href="${isLoggedIn and isAdmin} ? '/admin/categories' : '/user/products-by-category'" 
+                               class="btn btn-outline-light btn-lg w-100">
+                                <i class="fas fa-filter me-2"></i>Sản phẩm theo danh mục
                             </a>
                         </div>
                     </div>
@@ -61,38 +153,64 @@
     <div class="container py-5">
         <div class="row g-4">
             <div class="col-md-4">
-                <div class="card feature-card h-100">
+                <div class="card feature-card h-100 shadow border-0">
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <i class="fas fa-box fa-3x text-primary"></i>
                         </div>
                         <h5 class="card-title">Quản lý Sản phẩm</h5>
-                        <p class="card-text">Thêm, sửa, xóa và tìm kiếm sản phẩm. Xem sản phẩm theo giá từ thấp đến cao.</p>
-                        <a href="/products" class="btn btn-primary">Xem sản phẩm</a>
+                        <p class="card-text">
+                            <span th:if="${isLoggedIn and isAdmin}">Quản lý toàn bộ sản phẩm: thêm, sửa, xóa và tìm kiếm.</span>
+                            <span th:unless="${isLoggedIn and isAdmin}">Xem danh sách sản phẩm, tìm kiếm theo giá hoặc theo danh mục.</span>
+                        </p>
+                        <a th:href="${isLoggedIn and isAdmin} ? '/admin/products' : '/user/products'" 
+                           class="btn btn-primary"
+                           th:text="${isLoggedIn and isAdmin} ? 'Quản lý sản phẩm' : 'Xem sản phẩm'">
+                           Xem sản phẩm
+                        </a>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card feature-card h-100">
+                <div class="card feature-card h-100 shadow border-0">
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <i class="fas fa-list fa-3x text-success"></i>
                         </div>
                         <h5 class="card-title">Quản lý Danh mục</h5>
-                        <p class="card-text">Tạo và quản lý các danh mục sản phẩm. Xem tất cả sản phẩm của một danh mục.</p>
-                        <a href="/categories" class="btn btn-success">Xem danh mục</a>
+                        <p class="card-text">
+                            <span th:if="${isLoggedIn and isAdmin}">Quản lý danh mục sản phẩm: thêm, sửa, xóa và tổ chức.</span>
+                            <span th:unless="${isLoggedIn and isAdmin}">Tổ chức sản phẩm theo danh mục. Dễ dàng tìm kiếm và phân loại.</span>
+                        </p>
+                        <a th:href="${isLoggedIn and isAdmin} ? '/admin/categories' : '/user/categories'" 
+                           class="btn btn-success"
+                           th:text="${isLoggedIn and isAdmin} ? 'Quản lý danh mục' : 'Xem danh mục'">
+                           Xem danh mục
+                        </a>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card feature-card h-100">
+            <div class="col-md-4" th:if="${isLoggedIn and isAdmin}">
+                <div class="card feature-card h-100 shadow border-0 border-warning">
                     <div class="card-body text-center">
                         <div class="mb-3">
-                            <i class="fas fa-users fa-3x text-info"></i>
+                            <i class="fas fa-users fa-3x text-warning"></i>
                         </div>
-                        <h5 class="card-title">Quản lý Người dùng</h5>
-                        <p class="card-text">Quản lý thông tin người dùng và mối quan hệ với danh mục sản phẩm.</p>
-                        <a href="/users" class="btn btn-info">Xem người dùng</a>
+                        <h5 class="card-title text-warning">Quản lý Người dùng</h5>
+                        <p class="card-text">Quản lý tài khoản người dùng, phân quyền và kiểm soát truy cập hệ thống.</p>
+                        <a href="/admin/users" class="btn btn-warning">Quản lý Users</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" th:unless="${isLoggedIn and isAdmin}">
+                <div class="card feature-card h-100 shadow border-0">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-search fa-3x text-info"></i>
+                        </div>
+                        <h5 class="card-title">GraphQL API</h5>
+                        <p class="card-text">Khám phá và thử nghiệm với GraphQL API để truy vấn dữ liệu linh hoạt.</p>
+                        <a href="/graphiql" class="btn btn-info">GraphQL Playground</a>
                     </div>
                 </div>
             </div>
